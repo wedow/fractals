@@ -1,0 +1,5 @@
+An Interactive Fractal Generator in Go
+
+based on code demonstrated at http://www.pheelicks.com/2013/11/intro-to-images-in-go-fractals/
+
+fractal code can be found at https://github.com/felixpalmer/go_images/tree/8308c4794ee41584d1592c34658856d71353a434
