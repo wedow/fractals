@@ -8,7 +8,6 @@ import (
 	"github.com/skelterjohn/go.wde"
 	_ "github.com/skelterjohn/go.wde/init"
 	"fmt"
-	"time"
 	"runtime"
 )
 
@@ -62,7 +61,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	width, height := 400, 300
 	canvas := NewCanvas(image.Rect(0, 0, width, height))
-	zoom := 1600.0
+	zoom := 16000.0
 	center := complex(-0.71, -0.25)
 	colorizer := createColorizer("fractalGradients/gradient1.png")
 
@@ -78,5 +77,69 @@ func main() {
 	dw.Screen().CopyRGBA(&canvas.RGBA, canvas.Bounds())
 	dw.FlushImage()
 
-	<-time.After(10 * time.Second)
+	events := dw.EventChan()
+	done := make(chan bool)
+	input := make(chan string, 100)
+	go keyHandler(events, done, input)
+
+	go func() {
+		var i string
+		for {
+			select {
+			case i = <-input:
+				switch i {
+				case "zoomIn":
+					zoom *= 1.05
+				case "zoomOut":
+					zoom *= 0.95
+				case "panUp":
+					center -= complex(0, 10) * complex(1/zoom, 0)
+				case "panDown":
+					center += complex(0, 10) * complex(1/zoom, 0)
+				case "panLeft":
+					center -= complex(10, 0) * complex(1/zoom, 0)
+				case "panRight":
+					center += complex(10, 0) * complex(1/zoom, 0)
+				}
+
+				drawFractal(canvas, zoom, center, colorizer)
+				dw.Screen().CopyRGBA(&canvas.RGBA, canvas.Bounds())
+				dw.FlushImage()
+			}
+		}
+	}()
+
+	<-done
+}
+
+
+func keyHandler(events <-chan interface{}, done chan bool, input chan string) {
+loop:
+	for ei := range events {
+		runtime.Gosched()
+		switch e := ei.(type) {
+		case wde.KeyUpEvent:
+			for i:= 0; i < len(input); i++ {
+				_ = <- input
+			}
+		case wde.KeyTypedEvent:
+			switch e.Key {
+			case "prior":
+				input <- "zoomIn"
+			case "next":
+				input <- "zoomOut"
+			case "up_arrow":
+				input <- "panUp"
+			case "down_arrow":
+				input <- "panDown"
+			case "left_arrow":
+				input <- "panLeft"
+			case "right_arrow":
+				input <- "panRight"
+			}
+		case wde.CloseEvent:
+			break loop
+		}
+	}
+	done <- true
 }
