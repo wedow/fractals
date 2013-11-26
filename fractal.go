@@ -45,12 +45,12 @@ func createColorizer(filename string) func(float64) color.Color {
 	}
 }
 
-func drawFractal(canvas *Canvas, zoom float64, center complex128, colorizer func(float64) color.Color) {
+func drawFractal(canvas *Canvas, zoom float64, center complex128, colorizer func(float64) color.Color, iter int) {
 	size := canvas.Bounds().Size()
 	for x := 0; x < size.X; x++ {
 		for y := 0; y < size.Y; y++ {
 			c := toCmplx(x-size.X/2, y-size.Y/2, zoom, center)
-			mag := mandelbrot(c, 50)
+			mag := mandelbrot(c, iter)
 			color := colorizer(mag)
 			canvas.Set(x, y, color)
 		}
@@ -62,6 +62,7 @@ func main() {
 	width, height := 400, 300
 	canvas := NewCanvas(image.Rect(0, 0, width, height))
 	zoom := 16000.0
+	iter := 50.0
 	center := complex(-0.71, -0.25)
 	colorizer := createColorizer("fractalGradients/gradient1.png")
 
@@ -73,7 +74,7 @@ func main() {
 	dw.SetTitle("Fractals")
 	dw.Show()
 
-	drawFractal(canvas, zoom, center, colorizer)
+	drawFractal(canvas, zoom, center, colorizer, int(iter))
 	dw.Screen().CopyRGBA(&canvas.RGBA, canvas.Bounds())
 	dw.FlushImage()
 
@@ -90,8 +91,10 @@ func main() {
 				switch i {
 				case "zoomIn":
 					zoom *= 1.05
+					iter *= 1.001
 				case "zoomOut":
 					zoom *= 0.95
+					iter *= 0.999
 				case "panUp":
 					center -= complex(0, 10) * complex(1/zoom, 0)
 				case "panDown":
@@ -102,7 +105,7 @@ func main() {
 					center += complex(10, 0) * complex(1/zoom, 0)
 				}
 
-				drawFractal(canvas, zoom, center, colorizer)
+				drawFractal(canvas, zoom, center, colorizer, int(iter))
 				dw.Screen().CopyRGBA(&canvas.RGBA, canvas.Bounds())
 				dw.FlushImage()
 			}
