@@ -3,11 +3,13 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/png"
-	"log"
 	"math"
 	"math/cmplx"
-	"os"
+	"github.com/skelterjohn/go.wde"
+	_ "github.com/skelterjohn/go.wde/init"
+	"fmt"
+	"time"
+	"runtime"
 )
 
 // Utility function to convert a point on a Canvas to a
@@ -57,19 +59,24 @@ func drawFractal(canvas *Canvas, zoom float64, center complex128, colorizer func
 }
 
 func main() {
-	width, height := 800, 600
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	width, height := 400, 300
 	canvas := NewCanvas(image.Rect(0, 0, width, height))
-	zoom := 16000.0
+	zoom := 1600.0
 	center := complex(-0.71, -0.25)
 	colorizer := createColorizer("fractalGradients/gradient1.png")
-	drawFractal(canvas, zoom, center, colorizer)
 
-	outFilename := "fractal.png"
-	outFile, err := os.Create(outFilename)
+	dw, err := wde.NewWindow(width, height)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		return
 	}
-	defer outFile.Close()
-	log.Print("Saving image to: ", outFilename)
-	png.Encode(outFile, canvas)
+	dw.SetTitle("Fractals")
+	dw.Show()
+
+	drawFractal(canvas, zoom, center, colorizer)
+	dw.Screen().CopyRGBA(&canvas.RGBA, canvas.Bounds())
+	dw.FlushImage()
+
+	<-time.After(10 * time.Second)
 }
